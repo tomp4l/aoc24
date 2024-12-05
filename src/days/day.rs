@@ -5,5 +5,5 @@ pub struct DayResult {
 }
 
 pub trait Day {
-    fn run(&self, lines: Vec<String>) -> Result<DayResult, String>;
+    fn run(&self, input: String) -> Result<DayResult, String>;
 }

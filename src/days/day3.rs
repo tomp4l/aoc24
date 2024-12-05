@@ -5,8 +5,8 @@ use super::day::*;
 pub struct Instance;
 
 impl Day for Instance {
-    fn run(&self, lines: Vec<String>) -> Result<DayResult, String> {
-        let code = lines.join("\n").parse::<CorruptedCode>()?;
+    fn run(&self, input: String) -> Result<DayResult, String> {
+        let code = input.parse::<CorruptedCode>()?;
 
         let part1 = code.mul_always().to_string();
         let part2 = Some(code.mul_if_enabled().to_string());

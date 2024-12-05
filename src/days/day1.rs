@@ -5,8 +5,8 @@ use super::day::*;
 pub struct Instance;
 
 impl Day for Instance {
-    fn run(&self, lines: Vec<String>) -> Result<DayResult, String> {
-        let lists: Lists = lines.join("\n").parse()?;
+    fn run(&self, input: String) -> Result<DayResult, String> {
+        let lists: Lists = input.parse()?;
         let part1 = lists.total_distance().to_string();
 
         let part2 = Some(lists.similarity().to_string());

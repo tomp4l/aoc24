@@ -5,9 +5,9 @@ use super::day::*;
 pub struct Instance;
 
 impl Day for Instance {
-    fn run(&self, lines: Vec<String>) -> Result<DayResult, String> {
-        let reports = lines
-            .iter()
+    fn run(&self, input: String) -> Result<DayResult, String> {
+        let reports = input
+            .lines()
             .map(|line| line.parse())
             .collect::<Result<Vec<Report>, _>>()?;
         let part1 = reports.iter().filter(|r| r.is_safe()).count().to_string();

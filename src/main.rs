@@ -1,10 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    fs,
-    io::{BufRead, BufReader},
-    process::exit,
-};
+use std::{ collections::HashMap, fmt::Debug, fs::read_to_string, process::exit};
 
 use structopt::StructOpt;
 
@@ -56,9 +50,8 @@ fn main() {
     let program = programs
         .get(&opt.day)
         .unwrap_or_else(|| default_error_handler(format!("Undefined day: {}", opt.day).as_str()));
-    let file_contents: Vec<String> = fs::File::open(format!("input/day{}.txt", opt.day))
-        .and_then(|file| BufReader::new(file).lines().collect())
-        .unwrap_or_else(default_error_handler);
+    let file_contents =
+        read_to_string(format!("input/day{}.txt", opt.day)).unwrap_or_else(default_error_handler);
     let result = program
         .run(file_contents)
         .unwrap_or_else(default_error_handler);

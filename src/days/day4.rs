@@ -5,8 +5,8 @@ use super::day::*;
 pub struct Instance;
 
 impl Day for Instance {
-    fn run(&self, lines: Vec<String>) -> Result<DayResult, String> {
-        let search = lines.join("\n").parse::<WordSearch>()?;
+    fn run(&self, input: String) -> Result<DayResult, String> {
+        let search = input.parse::<WordSearch>()?;
 
         let part1 = search.count_xmas().to_string();
         let part2 = Some(search.count_mas_x().to_string());
@@ -105,7 +105,7 @@ SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX"
             .to_owned();
-        let result = Instance.run(input.lines().map(|s| s.to_owned()).collect());
+        let result = Instance.run(input);
         assert_eq!(
             result,
             Ok(DayResult {
