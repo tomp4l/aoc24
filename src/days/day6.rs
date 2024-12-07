@@ -149,7 +149,8 @@ impl Coord {
 
 fn count_loops(map: &Map) -> usize {
     let mut loops = 0;
-    let candidates = map.guard_path_looped().unwrap();
+    let mut candidates = map.guard_path_looped().unwrap();
+    candidates.remove(&map.guard.clone());
     let mut map = map.clone();
 
     for coord in candidates {
