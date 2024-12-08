@@ -1,7 +1,6 @@
 use std::mem::swap;
 
-#[allow(unused)]
-fn gcd(a: usize, b: usize) -> usize {
+pub fn gcd(a: usize, b: usize) -> usize {
     let mut r = (a, b);
 
     while r.0 != 0 {
@@ -14,7 +13,6 @@ fn gcd(a: usize, b: usize) -> usize {
 }
 
 #[allow(unused)]
-
 pub fn lcm(a: usize, b: usize) -> usize {
     a * b / gcd(a, b)
 }
