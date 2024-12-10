@@ -94,9 +94,12 @@ impl FileSystem {
 
     fn move_one_left(&mut self) {
         let last = self.data.pop().unwrap();
+        self.free_space -= 1;
+        if last.is_none() {
+            return;
+        }
         let first_free = self.data.iter().position(|&x| x.is_none()).unwrap();
         self.data[first_free] = last;
-        self.free_space -= 1;
     }
 
     fn move_block_left(&mut self, id: u32) {
