@@ -94,6 +94,6 @@ mod tests {
         let day = Instance;
         let result = day.run(input).unwrap();
         assert_eq!(result.part1, "55312");
-        assert_eq!(result.part2, None);
+        assert_eq!(result.part2, Some("65601038650482".to_owned()));
     }
 }
