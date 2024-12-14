@@ -1,4 +1,4 @@
-use std::{ collections::HashMap, fmt::Debug, fs::read_to_string, process::exit};
+use std::{collections::HashMap, fmt::Debug, fs::read_to_string, process::exit};
 
 use structopt::StructOpt;
 
@@ -34,7 +34,7 @@ fn main() {
     programs.insert(11, Box::new(day11::Instance));
     programs.insert(12, Box::new(day12::Instance));
     programs.insert(13, Box::new(day13::Instance));
-    programs.insert(14, Box::new(day14::Instance));
+    programs.insert(14, Box::new(day14::Instance::default()));
     programs.insert(15, Box::new(day15::Instance));
     programs.insert(16, Box::new(day16::Instance));
     programs.insert(17, Box::new(day17::Instance));
