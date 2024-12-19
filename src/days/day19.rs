@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, slice, str::FromStr};
 
 use super::day::*;
 
@@ -8,13 +8,14 @@ impl Day for Instance {
     fn run(&self, input: String) -> Result<DayResult, String> {
         let towel_patterns: TowelPatterns = input.parse()?;
 
-        let part1 = towel_patterns.count_valid().to_string();
-        let part2 = Some(towel_patterns.count_patterns().to_string());
+        let (part1, part2) = towel_patterns.count_valid_and_patterns();
+        let part1 = part1.to_string();
+        let part2 = Some(part2.to_string());
         Ok(DayResult { part1, part2 })
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 enum Colour {
     White,
     Blue,
@@ -78,7 +79,9 @@ fn valid_count(towel: &[Colour], patterns: &[Vec<Colour>]) -> usize {
 
     while remainders.len() > 0 {
         let mut new_remainders = HashMap::new();
-        for (remainder, count) in remainders {
+        let longest = remainders.iter().map(|(c,_)|c.len()).max().unwrap();
+        new_remainders.extend(remainders.iter().filter(|(c,_)|c.len()<longest).map(|(p, c)|((p.as_ptr(), p.len()), *c)));
+        for (remainder, count) in remainders.into_iter().filter(|(c,_)|c.len()==longest) {
             for pattern in patterns {
                 if remainder.len() < pattern.len() {
                     continue;
@@ -100,31 +103,35 @@ fn valid_count(towel: &[Colour], patterns: &[Vec<Colour>]) -> usize {
                 }
                 if matched {
                     new_remainders
-                        .entry(remainder)
+                        .entry((remainder.as_ptr(), remainder.len()))
                         .and_modify(|c| *c += count)
                         .or_insert(count);
                 }
             }
         }
-        remainders = new_remainders.into_iter().collect();
+        remainders = new_remainders
+            .into_iter()
+            .map(|((p, l), c)| 
+            // safe as using same lifetime and valid slices from above
+            unsafe { (slice::from_raw_parts(p, l), c) })
+            .collect();
     }
 
     total_count
 }
 
 impl TowelPatterns {
-    fn count_valid(&self) -> usize {
-        self.towels
-            .iter()
-            .filter(|towel| valid_count(towel, &self.patterns) > 0)
-            .count()
-    }
-
-    fn count_patterns(&self) -> usize {
-        self.towels
+    fn count_valid_and_patterns(&self) -> (usize, usize) {
+        let counts: Vec<_> = self
+            .towels
             .iter()
             .map(|towel| valid_count(towel, &self.patterns))
-            .sum()
+            .collect();
+
+        (
+            counts.iter().filter(|c| **c > 0).count(),
+            counts.iter().sum(),
+        )
     }
 }
 
