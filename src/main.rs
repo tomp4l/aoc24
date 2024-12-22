@@ -40,7 +40,7 @@ fn main() {
     programs.insert(17, Box::new(day17::Instance));
     programs.insert(18, Box::new(day18::Instance::default()));
     programs.insert(19, Box::new(day19::Instance));
-    programs.insert(20, Box::new(day20::Instance));
+    programs.insert(20, Box::new(day20::Instance::default()));
     programs.insert(21, Box::new(day21::Instance));
     programs.insert(22, Box::new(day22::Instance));
     programs.insert(23, Box::new(day23::Instance));
