@@ -1,8 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Debug,
-    str::FromStr,
-};
+use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
 use super::day::*;
 
@@ -12,12 +8,8 @@ impl Day for Instance {
     fn run(&self, input: String) -> Result<DayResult, String> {
         let numeric_keys = parse_input(&input)?;
 
-        let part1 = numeric_keys
-            .iter()
-            .map(|(i, k)| complexity(*i, k))
-            .sum::<usize>()
-            .to_string();
-        let part2 = None;
+        let part1 = complexity(&numeric_keys, 2).to_string();
+        let part2 = Some(complexity(&numeric_keys, 25).to_string());
         Ok(DayResult { part1, part2 })
     }
 }
@@ -39,71 +31,108 @@ fn parse_input(input: &str) -> Result<Vec<(usize, Vec<NumericKey>)>, String> {
         .collect()
 }
 
-fn complexity(numeric_value: usize, keys: &[NumericKey]) -> usize {
-    let start = NumericKey::Activate.position();
-    let next_options = inputs(start, keys);
-    let next_options: HashSet<_> = next_options
-        .into_iter()
-        .flat_map(|next| inputs(DirectionalKey::Activate.position(), &next))
-        .collect();
-    let next_options: HashSet<_> = next_options
-        .into_iter()
-        .flat_map(|next| inputs(DirectionalKey::Activate.position(), &next))
-        .collect();
-
-    numeric_value * next_options.into_iter().map(|k| k.len()).min().unwrap_or(0)
+#[derive(Debug)]
+struct CachedComplexity {
+    cost_cache: HashMap<(usize, Vec<DirectionalKey>), usize>,
+    best_cache: HashMap<(Coord, Coord), Vec<DirectionalKey>>,
+    depth: usize,
 }
 
-fn print_directions(directions: &[DirectionalKey]) {
-    println!(
-        "{}",
-        directions
-            .iter()
-            .map(|k| match k {
-                DirectionalKey::Up => "^",
-                DirectionalKey::Down => "v",
-                DirectionalKey::Left => "<",
-                DirectionalKey::Right => ">",
-                DirectionalKey::Activate => "A",
-            })
-            .collect::<Vec<_>>()
-            .join("")
-    );
-}
-
-fn inputs<P: Position>(start: Coord, keys: &[P]) -> HashSet<Vec<DirectionalKey>>
-where
-    P: Debug,
-{
-    let mut results = HashSet::new();
-    results.insert(vec![]);
-    let mut current = start;
-
-    for key in keys {
-        let target = key.position();
-
-        let a = current.directions(&target, true);
-        let b = current.directions(&target, false);
-
-        results = results
-            .into_iter()
-            .flat_map(move |r| {
-                let current = current.clone();
-                vec![a.clone(), b.clone()]
-                    .into_iter()
-                    .filter(move |a| P::is_valid(&current, a))
-                    .map(move |l| {
-                        let mut v = r.clone();
-                        v.extend(l);
-                        v.push(DirectionalKey::Activate);
-                        v
-                    })
-            })
-            .collect();
-
-        current = target;
+impl CachedComplexity {
+    fn new(depth: usize) -> Self {
+        CachedComplexity {
+            cost_cache: HashMap::new(),
+            best_cache: HashMap::new(),
+            depth,
+        }
     }
-    results
+
+    fn complexity(&mut self, keys: &[NumericKey]) -> usize {
+        let mut current = NumericKey::start();
+        let mut total = 0;
+
+        for key in keys {
+            let mut horizontal = current.directions(&key.position(), false);
+            let mut vertical = current.directions(&key.position(), true);
+            horizontal.push(DirectionalKey::Activate);
+            vertical.push(DirectionalKey::Activate);
+
+            if !NumericKey::is_valid(&current, &horizontal) || horizontal == vertical {
+                total += self.cost(&vertical);
+            } else if !NumericKey::is_valid(&current, &vertical) {
+                total += self.cost(&horizontal);
+            } else {
+                let h_cost = self.cost(&horizontal);
+                let v_cost = self.cost(&vertical);
+                total += h_cost.min(v_cost)
+            }
+            current = key.position();
+        }
+        total
+    }
+
+    fn cost(&mut self, keys: &[DirectionalKey]) -> usize {
+        self.cost_depth(keys, self.depth)
+    }
+
+    fn cost_depth(&mut self, keys: &[DirectionalKey], depth: usize) -> usize {
+        let cache_key = (depth, keys.to_vec());
+        if let Some(existing) = self.cost_cache.get(&cache_key) {
+            *existing
+        } else if depth == 0 {
+            keys.len()
+        } else {
+            let mut cost = 0;
+            let mut current = DirectionalKey::Activate.position();
+            for key in keys {
+                let best = self.best_keys(current, key.position(), depth);
+                cost += self.cost_depth(&best, depth - 1);
+                current = key.position();
+            }
+            self.cost_cache.insert(cache_key, cost);
+
+            cost
+        }
+    }
+
+    fn best_keys(&mut self, from: Coord, to: Coord, depth: usize) -> Vec<DirectionalKey> {
+        let cache_key = (from, to);
+        if let Some(existing) = self.best_cache.get(&cache_key) {
+            existing.clone()
+        } else {
+            let mut horizontal = from.directions(&to, false);
+            let mut vertical = from.directions(&to, true);
+            horizontal.push(DirectionalKey::Activate);
+            vertical.push(DirectionalKey::Activate);
+
+            if !DirectionalKey::is_valid(&from, &horizontal) || horizontal == vertical {
+                vertical
+            } else if !DirectionalKey::is_valid(&from, &vertical) {
+                horizontal
+            } else {
+                let h_cost = self.cost_depth(&horizontal, depth - 1);
+                let v_cost = self.cost_depth(&vertical, depth - 1);
+
+                if h_cost < v_cost {
+                    horizontal
+                } else {
+                    vertical
+                }
+            }
+        }
+    }
+}
+
+fn complexity(keys: &[(usize, Vec<NumericKey>)], depth: usize) -> usize {
+    let mut sum = 0;
+    let mut cache = CachedComplexity::new(depth);
+    for (v, k) in keys {
+        let complexity = cache.complexity(k);
+
+        sum += complexity * v;
+    }
+
+    sum
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -116,6 +145,7 @@ enum DirectionalKey {
 }
 
 trait Position {
+    fn start() -> Coord;
     fn position(&self) -> Coord;
     fn is_valid(start: &Coord, directions: &[DirectionalKey]) -> bool;
 }
@@ -141,6 +171,10 @@ impl Position for DirectionalKey {
             }
         }
         true
+    }
+
+    fn start() -> Coord {
+        Self::Activate.position()
     }
 }
 
@@ -195,23 +229,9 @@ impl Position for NumericKey {
         }
         true
     }
-}
 
-impl NumericKey {
-    fn numeric_value(&self) -> usize {
-        match self {
-            NumericKey::Zero => 0,
-            NumericKey::One => 1,
-            NumericKey::Two => 2,
-            NumericKey::Three => 3,
-            NumericKey::Four => 4,
-            NumericKey::Five => 5,
-            NumericKey::Six => 6,
-            NumericKey::Seven => 7,
-            NumericKey::Eight => 8,
-            NumericKey::Nine => 9,
-            NumericKey::Activate => 0,
-        }
+    fn start() -> Coord {
+        Self::Activate.position()
     }
 }
 
@@ -302,7 +322,7 @@ mod tests {
             result,
             Ok(DayResult {
                 part1: "126384".to_owned(),
-                part2: None
+                part2: Some("154115708116294".to_owned())
             })
         );
     }
@@ -323,11 +343,3 @@ mod tests {
         );
     }
 }
-
-// <<^A^^A>>AvvvA
-// <<vAA>^A>A<AA>AvAA^A<vAAA>^A
-// <<vAA>A>^AAvA<^A>AvA^A<<vA>>^AAvA^A<vA>^AA<A>A<<vA>A>^AAAvA<^A>A
-
-// ^<<A^^A>>AvvvA
-// <Av<AA^>>A<AA>AvAA^Av<AAA^>A
-// v<<A^>>Av<A<A^>>AA<Av>AA^Av<<A^>>AAvA^Av<A^>AA<A>Av<A<A^>>AAA<Av>A^A
